@@ -1,0 +1,24 @@
+
+************************************************************
+CAD Analysis: tmp_result
+************************************************************
+
+Candidate detection results:
+    True positives: 151
+    False positives: 5152
+    False negatives: 23
+    True negatives: 0
+    Total number of candidates: 5630
+    Total number of nodules: 174
+    Ignored candidates on excluded nodules: 0
+    Ignored candidates which were double detections on a nodule: 327
+    Sensitivity: 0.867816092
+    Average number of candidates per scan: 77.123287671
+fps_itp 0.12 ,sens_itp 0.09
+fps_itp 0.25 ,sens_itp 0.11
+fps_itp 0.50 ,sens_itp 0.20
+fps_itp 1.00 ,sens_itp 0.29
+fps_itp 2.00 ,sens_itp 0.47
+fps_itp 4.00 ,sens_itp 0.56
+fps_itp 8.00 ,sens_itp 0.69
+    Average sensivity over seven fps for label 31: 0.346469622
