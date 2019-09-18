@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 """
 Created on Thu Aug  8 15:42:37 2019
 1. 将3D图像转化为2D图像存放在文件夹中（所有图片都要进行的操作）
 2. 生成标注，有标注数据的图片才会生成标注文件。
 3. 1:19 划分验证集和训练集，保存为train.txt,valid.txt; 
 保存最终预测用的图片在predict.txt（相比valid来说，包括了那些没有标注的2D图片）
+
 @author: Chen
 """
 
@@ -38,7 +40,7 @@ def load_itk(file_name, file_path):
 
     return ct_scan, origin, spacing
 
-def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='data/custom/', pics_path = 'images/',mask_path = 'labels/',
+def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='trainset_2d/', pics_path = 'image/',mask_path = 'label/',
               clipmin= -1000, clipmax=600):
     '''
     get mask and save
@@ -62,13 +64,12 @@ def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='
     '''
 
 
-    
+        
     if os.path.exists(init_path+pics_path) and os.path.exists(init_path+mask_path):
         shutil.rmtree(init_path+pics_path)
         shutil.rmtree(init_path+mask_path)
     
     if not os.path.exists(init_path+pics_path):
-        #os.mkdir(init_path)
         os.makedirs(init_path+pics_path)
         
     if not os.path.exists(init_path+mask_path):
@@ -77,9 +78,7 @@ def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='
     for file in glob(file_path+'*.mhd'):
         uid = re.findall(re.compile(r'\d+'),file)[0]
         id_list.append(uid)
-
-    classes = ['nodule','stripe','artery','lymph']    
-    
+        
     valid_id = []
     for index,seriesuid in enumerate(id_list):
         if index < len(id_list)//20:
@@ -93,6 +92,7 @@ def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='
         z_len = ct_clip.shape[0]
         print(f'{index+1}/{len(id_list)}done!')
         
+        # Only get nodule data, For multi detection, just change some code.
         for num in range(z_len):
             img = ct_clip[num]
             img = np.rint((img-np.min(img))/(np.max(img)-np.min(img))*255).astype(np.uint8)   # 归一化            
@@ -100,20 +100,19 @@ def get_train_valid_data(anns_all, file_path, height=512, width=512, init_path='
             title = (3 - len(str(num))) * '0' + str(num)
             # save all 2d images.    
             cv2.imwrite(os.path.join(init_path+pics_path, seriesuid+'_'+title+'.png'),img)
+
             for _, ann in ann_df.iterrows():
-                # classes --> all classes ['nodule','stripe','artery','lymph'] 
-                if label_dict[ann.label] in classes:
+                # 只关注结节的标注
+                if label_dict[ann.label] == 'nodule':
                     # x,y为坐标位置，d为直径。
                     x, y, z, w, h, d = ann.coordX, ann.coordY, ann.coordZ, ann.diameterX, ann.diameterY, ann.diameterZ
                     if num > z - d/2 and num < z + d / 2:
+                        # save label(only save those have nodule annotation.)
                         txt_path = os.path.join(init_path+mask_path, seriesuid+'_'+title+'.txt')
-                        if classes.index(label_dict[ann.label]) in [0,1,2,3]:
-                            if ann.coordX/512<1 and ann.coordY/512 <1 and ann.diameterX/512 < 1 and ann.diameterX/512 <1 and ann.diameterY/512 < 1:
-                                # 官方的标注有问题！！！剔除掉不符合的条件的！！！（383281）
-                                with open(txt_path,'a') as f:
-                                    f.write(f'{classes.index(label_dict[ann.label])} '+str(ann.coordX/512)+' '+str(ann.coordY/512)+' '+str(ann.diameterX/512)+' '+str(ann.diameterY/512))
-                                    f.write('\n')
-                            
+                        with open(txt_path,'a') as f:
+                            f.write('0 '+str(ann.coordX/512)+' '+str(ann.coordY/512)+' '+str(ann.diameterX/512)+' '+str(ann.diameterY/512))
+                            f.write('\n')
+    
     define_train_valid(valid_id)
         
 
@@ -157,3 +156,6 @@ if __name__ == '__main__':
     anns_all = pd.read_csv(anns_path, index_col=0)  #读取csv文件。
     # get LABEL 
     get_train_valid_data(anns_all, file_path,init_path='data/custom/', pics_path = 'images/',mask_path = 'labels/')
+
+
+

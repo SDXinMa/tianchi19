@@ -143,14 +143,14 @@ class YOLOLayer(nn.Module):
         self.img_dim = img_dim
         num_samples = x.size(0)
         grid_size = x.size(2)
-        #print('---------')
-        #print(x.size())
+        print('---------')
+        print(x.size())
         prediction = (
             x.view(num_samples, self.num_anchors, self.num_classes + 5, grid_size, grid_size)
             .permute(0, 1, 3, 4, 2)
             .contiguous()
         )
-        #print(prediction.size())
+        print(prediction.size())
 
         # Get outputs
         x = torch.sigmoid(prediction[..., 0])  # Center x

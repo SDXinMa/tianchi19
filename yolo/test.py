@@ -81,10 +81,10 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
     parser.add_argument("--model_def", type=str, default="config/yolov3-custom.cfg", help="path to model definition file")
     parser.add_argument("--data_config", type=str, default="config/custom.data", help="path to data config file")
-    parser.add_argument("--weights_path", type=str, default="checkpoints/2019-09-07-22 _14.pth", help="path to weights file")
+    parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
     parser.add_argument("--class_path", type=str, default="data/classes.names", help="path to class label file")
     parser.add_argument("--iou_thres", type=float, default=0.5, help="iou threshold required to qualify as detected")
-    parser.add_argument("--conf_thres", type=float, default=0.5, help="object confidence threshold")
+    parser.add_argument("--conf_thres", type=float, default=0.001, help="object confidence threshold")
     parser.add_argument("--nms_thres", type=float, default=0.5, help="iou thresshold for non-maximum suppression")
     parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=512, help="size of each image dimension")
@@ -96,7 +96,6 @@ if __name__ == "__main__":
     data_config = parse_data_config(opt.data_config)
     valid_path = data_config["valid"]
     
-    # 此函数有点坑爹！在文件类别的最后需要加多一个换行才行。。。
     class_names = load_classes(data_config["names"])
 
     # Initiate model
@@ -122,9 +121,6 @@ if __name__ == "__main__":
 
     print("Average Precisions:")
     for i, c in enumerate(ap_class):
-        #print(AP)
-        #print(ap_class)
-        #print(class_names)
         print(f"+ Class '{c}' ({class_names[c]}) - AP: {AP[i]}")
         print(f"+ Class '{c}' ({class_names[c]}) - f1: {f1[i]}")
         print(f"+ Class '{c}' ({class_names[c]}) - recall: {recall[i]}")

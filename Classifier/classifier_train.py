@@ -5,10 +5,6 @@ Created on Sat Aug 24 19:20:15 2019
 @author: Chen
 """
 
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot
-
 from Patch_dataset import *
 from models import vgg11_bn
 from models import *
@@ -21,7 +17,6 @@ import datetime
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from classifier_test import evaluate
 
 import argparse
 
@@ -36,6 +31,9 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between saving model weights")
     parser.add_argument("--model_type",type = str, default = "vgg",help="vgg/resnet")
     opt = parser.parse_args()
+
+
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # init model
@@ -50,7 +48,7 @@ if __name__ == '__main__':
     
     
     # load data
-    annotation_path = '../dataset/multi_train_patch_annotation.csv'
+    annotation_path = '../dataset/train_patch_annotation.csv'
     img_path = 'data/train/'
     
     print('----------loading data----------')
@@ -64,12 +62,10 @@ if __name__ == '__main__':
         )
     print('data loaded')
     
-    optimizer = torch.optim.Adam(model.parameters(),lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()  
     max_acc = 0
-    loss_list = []
-    val_acc_list = []
-
+    
     for epoch in range(opt.epochs):
         model.train() 
         start_time = time.time()
@@ -78,7 +74,7 @@ if __name__ == '__main__':
         correct = 0 
         
         # start training.
-        for batch_i, (imgs, labels, indexs) in enumerate(dataloader):
+        for batch_i, (imgs, labels) in enumerate(dataloader):
             
             inputs = Variable(imgs.to(device),requires_grad=True)
             labels = Variable(labels.to(device),requires_grad=False)
@@ -103,18 +99,10 @@ if __name__ == '__main__':
             epoch_batches_left = len(dataloader) - (batch_i + 1)
             time_left = datetime.timedelta(seconds=epoch_batches_left * (time.time() - start_time) / (batch_i + 1))
             log_str += f"\n---- ETA {time_left}"
-            print(log_str)   
+            print(log_str)            
         
-        acc,pre,recall = evaluate(model,opt.img_size)         
-        loss_list.append(loss.item())
-        val_acc_list.append(acc)
-
-        if acc > max_acc:
-            max_acc = acc
+        
+        if accuracy>max_acc and accuracy > 0.9:
+            max_acc = accuracy
             torch.save(model.state_dict(), f"checkpoints/{opt.model_type}_{max_acc}_%d.pth" % epoch)
-    
-    
-    plt.plot(loss_list)
-    plt.savefig('logs/loss.png')
-    plt.plot(val_acc_list)
-    plt.savefig('logs/val_acc.png')      
+            

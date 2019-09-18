@@ -8,7 +8,7 @@ from functools import partial
 
 class VGG(nn.Module):
 
-    def __init__(self, features, num_classes=5, init_weights=False):
+    def __init__(self, features, num_classes=2, init_weights=False):
         super(VGG, self).__init__()
         self.features = features
         self.classifier = nn.Sequential(
@@ -19,7 +19,6 @@ class VGG(nn.Module):
             nn.ReLU(True),
             nn.Dropout(),
             nn.Linear(1024, num_classes),
-
         )
         if init_weights:
             self._initialize_weights()
@@ -223,7 +222,7 @@ class ResNet(nn.Module):
                  sample_size,
                  sample_duration,
                  shortcut_type='B',
-                 num_classes=5):
+                 num_classes=2):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv3d(

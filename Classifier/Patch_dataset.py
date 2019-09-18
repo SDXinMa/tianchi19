@@ -74,7 +74,7 @@ class DatasetGenerator(Dataset):
         ann_all = pd.read_csv(trans_annotation_path)
         # nodules' coordinates.
         self.ids,self.xs,self.ys,self.zs,self.labels = \
-            ann_all.seriesuid.values,ann_all.coordX.values,ann_all.coordY.values,ann_all.coordZ.values,ann_all.label.values
+            ann_all.id.values,ann_all.x.values,ann_all.y.values,ann_all.z.values,ann_all.label.values
             
         self.img_path = img_path
         self.patch_size = patch_size  # z,y,x
@@ -106,8 +106,8 @@ class DatasetGenerator(Dataset):
         
         return img, self.labels[index],index
     
-
-    def __len__(self): 
+    
+    def __len__(self): #这个函数也必须要写，它返回的是数据集的长度，也就是多少张图片，要和loader的长度作区分
         return len(self.labels)
 
 
@@ -128,14 +128,13 @@ class patchDataset(Dataset):
         return img,label,index
 
         
-    def __len__(self): 
-    #这个函数也必须要写，它返回的是数据集的长度，也就是多少张图片，要和loader的长度作区分
+    def __len__(self): #这个函数也必须要写，它返回的是数据集的长度，也就是多少张图片，要和loader的长度作区分
         return len(self.labels)
 
 
 if __name__ == '__main__':
-    annotation_path = '../dataset/multi_train_patch_annotation.csv'
-    valid_annotation_path = '../dataset/multi_valid_patch_annotation.csv'
+    annotation_path = '../dataset/train_patch_annotation.csv'
+    valid_annotation_path = '../dataset/valid_patch_annotation.csv'
     img_path = '../dataset/trainset/'
     generateDataset = DatasetGenerator(annotation_path,img_path)
     generateValid = DatasetGenerator(valid_annotation_path,img_path)

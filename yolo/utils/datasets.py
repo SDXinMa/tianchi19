@@ -57,11 +57,10 @@ class ImageFolder(Dataset):
 
 
 class ListDataset(Dataset):
-    def __init__(self, list_path, transform = None, img_size=512, augment=True, multiscale=True, normalized_labels=True):
-
+    def __init__(self, list_path, img_size=512, augment=True, multiscale=True, normalized_labels=True):
         with open(list_path, "r") as file:
             self.img_files = file.readlines()
- 
+
         self.label_files = [
             path.replace("images", "labels").replace(".png", ".txt").replace(".jpg", ".txt")
             for path in self.img_files
@@ -74,7 +73,6 @@ class ListDataset(Dataset):
         self.min_size = self.img_size - 3 * 32
         self.max_size = self.img_size + 3 * 32
         self.batch_count = 0
-        self.transform = transform
 
     def __getitem__(self, index):
 
@@ -136,8 +134,6 @@ class ListDataset(Dataset):
             if np.random.random() < 0.5:
                 img, targets = horisontal_flip(img, targets)
 
-        if self.transform:
-            img = self.transform(img)
         return img_path, img, targets
 
     def collate_fn(self, batch):
@@ -147,8 +143,7 @@ class ListDataset(Dataset):
         # Add sample index to targets
         for i, boxes in enumerate(targets):
             boxes[:, 0] = i
-        if targets:
-            targets = torch.cat(targets, 0)
+        targets = torch.cat(targets, 0)
         # Selects new image size every tenth batch
         if self.multiscale and self.batch_count % 10 == 0:
             self.img_size = random.choice(range(self.min_size, self.max_size + 1, 32))

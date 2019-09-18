@@ -29,11 +29,31 @@ import pandas as pd
 import argparse
 
 
-def evaluate(model,img_size,):
-    
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--weights",type=str, help="if specified starts from checkpoint model")
+    parser.add_argument("--img_size", type=int, default=32, help="size of each image dimension")
+    parser.add_argument("--model_type",type = str, default = "vgg",help="vgg/resnet")
+    opt = parser.parse_args()
+
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # init model
+    if opt.model_type == "vgg":
+        model = vgg11_bn().to(device)
+    elif opt.model_type == "resnet":
+        model = resnet101(sample_size = opt.img_size, sample_duration = opt.img_size).to(device)
+    if opt.weights:
+        model.load_state_dict(torch.load(opt.weights))
+    else:
+        raise Exception("--weights is necessary!")
+    print(model)
+    
+    
     # load data
-    annotation_path = '../dataset/multi_valid_patch_annotation.csv'
+    annotation_path = '../dataset/valid_patch_annotation.csv'
     img_path = 'data/valid/'
     predict_csv = pd.read_csv(annotation_path,index_col=0)   
 
@@ -57,7 +77,7 @@ def evaluate(model,img_size,):
     pre_correct = 0
     recall_total = 0
     recall_correct = 0
-    label_dict = {1:1,2:5,3:31,4:32}
+    
     
     for batch_i, (imgs, labels,index) in enumerate(dataloader):
             
@@ -68,60 +88,29 @@ def evaluate(model,img_size,):
         #torch.max()[0]， 只返回最大值的每个数
         #troch.max()[1]， 只返回最大值的每个索引
         predicted = torch.max(outputs.data, 1)[1]
-        #print(predicted)
-        
-        if predicted.cpu().numpy() != 0:
-            predict_csv.loc[index,'class'] = predicted.cpu().numpy()
-            predict_csv.loc[index,'class'] = label_dict[int(predicted.cpu().numpy())]
-            m = torch.nn.Softmax(dim=1)  # 先定义一个层。
-            conf = torch.max(m(outputs.data), 1)[0]  # 使用softmax映射到0~1（其实就是sigmoid的多分类推广）
-            predict_csv.loc[index,'probability'] = conf.cpu().numpy()
-        else:
-            predict_csv.drop(index = index,inplace = True)
-        
+        print(predicted)
+        predict_csv.loc[index,'predict'] = predicted.cpu().numpy()
+        conf = torch.max(torch.sigmoid(outputs.data), 1)[0]
+        predict_csv.loc[index,'conf'] = conf.cpu().numpy()
         acc_total += labels.size(0)
         acc_correct += (predicted == labels).sum().item()
-        #print(f"{batch_i}/{len(dataset)}")
         
-        # 对于阳性样本中，分类的准确性。
-        if predicted != 0:
+        if predicted == 1:
             pre_total += 1
             pre_correct += (predicted == labels).sum().item()
         
-        # 成功召回，且分类正确。
-        if labels[0] != 0:
+        
+        if labels[0] == 1:
             recall_total += 1
             recall_correct += (predicted == labels).sum().item()
         
-        
+        print(f"{batch_i}/{len(dataset)}")
     accuracy = acc_correct/acc_total
     precision = pre_correct/pre_total
     recall = recall_correct/recall_total
     
-    log_str = f"\n val_acc:{accuracy}\n val_precision:{precision}\n val_recall:{recall}"
+            # log
+    log_str = f"\n acc:{accuracy}\n precision:{precision}\n recall:{recall}"
     print(log_str)
-    #predict_csv.drop(columns = 'label',inplace = True)
-    #predict_csv.to_csv('../dataset/result.csv',index = False)
-    return accuracy,precision,recall
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--weights",type=str, help="if specified starts from checkpoint model")
-    parser.add_argument("--img_size", type=int, default=32, help="size of each image dimension")
-    parser.add_argument("--model_type",type = str, default = "vgg",help="vgg/resnet")
-    opt = parser.parse_args()
-    
-    # init model
-    if opt.model_type == "vgg":
-        model = vgg11_bn().to(device)
-    elif opt.model_type == "resnet":
-        model = resnet101(sample_size = opt.img_size, sample_duration = opt.img_size).to(device)
-    if opt.weights:
-        model.load_state_dict(torch.load(opt.weights))
-    else:
-        raise Exception("--weights is necessary!")
-    print(model)
-    
-    evaluate(model,opt.img_size)
-    
+    predict_csv.to_csv('../dataset/result.csv')
